@@ -2,39 +2,39 @@
 
 ## Hypervisor
 
-The image is built using OpenStack.
+The image is built using Openstack.
 
-### Prerequisites for OpenStack builds
+### Prerequisites for Openstack builds
 
-First, check for prerequisites at [Packer docs for the OpenStack builder](https://developer.hashicorp.com/packer/plugins/builders/openstack).
+Check any prerequisites over on the [Packer docs for the Openstack builder](https://developer.hashicorp.com/packer/plugins/builders/openstack).
 
-Also ensure that you have a [Ubuntu 20.04](https://cloud-images.ubuntu.com/focal/current/) or [Ubuntu 22.04](https://cloud-images.ubuntu.com/jammy/current/) cloud image available in your OpenStack instance before continuing as it will need to be referenced.
-This build process also supports Flatcar Linux, but only Stable has been tested.
+Also ensure you have a [Ubuntu 20.04](https://cloud-images.ubuntu.com/focal/current/) or [Ubuntu 22.04](https://cloud-images.ubuntu.com/jammy/current/) cloud image available in your Openstack instance before continuing as it will need to be referenced.
+This also supports Flatcar - so far only Stable has been tested.
 
 #### Note
-> Other operating systems could be supported and additions are welcome.
+> Other OS's could be supported and additions are welcome.
 
 ## Setup Openstack authentication
-Ensure you have set up your method of authentication. See the [examples here](https://docs.openstack.org/python-openstackclient/zed/cli/authentication.html).
+Ensure you have set up your method of authentication - [examples here](https://docs.openstack.org/python-openstackclient/zed/cli/authentication.html).
 You can also check out the [packer builder](https://developer.hashicorp.com/packer/plugins/builders/openstack#configuration-reference) for more information on authentication.
 
-You should be able to run commands against OpenStack before running this builder, otherwise it will fail.
+You should be able to run commands against openstack before running this builder otherwise it will fail.
 You can test with a simple command such as `openstack image list`.
 
 ## Building Images
 
 The build [prerequisites](../capi.md#prerequisites) for using `image-builder` for
-building OpenStack images are managed by running:
+building Openstack images are managed by running:
 
 ```bash
 cd image-builder/images/capi
 make deps-openstack
 ```
 
-### Define variables for OpenStack build
+### Define variables for Openstack build
 
 Using the [Openstack packer provider](https://developer.hashicorp.com/packer/plugins/builders/openstack), an instance will be deployed and an image built from it.
-A certain set of environment variables must be defined in a json file and referenced as shown below in the build example.
+A certain set of environment variables (example below) must be defined in a json file and referenced as shown below in the build example.
 
 Replace UPPERCASE variables with your values.
 ```json
@@ -53,14 +53,14 @@ Replace UPPERCASE variables with your values.
 
 Check out `images/capi/packer/openstack/packer.json` for more variables such as allowing the use of floating IPs and config drives.
 
-### Building Image on OpenStack
+### Building Image on Openstack
 
 From the `images/capi` directory, run `PACKER_VAR_FILES=var_file.json make build-openstack-<DISTRO>`.
 
-An instance is built in OpenStack from the source image defined. Once completed, the instance is shut down and the image is created.
-This image will default to private, however this can be controlled via `image_visibility`.
+An instance is built in Openstack from the source image defined and once completed, the instance is shutdown and the image gets created.
+This image will default to private however this can be controlled via `image_visibility`.
 
-For building a ubuntu 22.04-based CAPI image with Kubernetes 1.23.15, run the following commands:
+For building a ubuntu-2204 based capi image with Kubernetes 1.23.15, run the following commands:
 
 #### Example
 ```bash
