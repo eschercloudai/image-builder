@@ -6,8 +6,8 @@
   "shutdown_command": "shutdown -P now",
   "ssh_username": "ubuntu",
   "source_image": "",
-  "networks": "",
-  "flavor": "",
+  "networks": "f558ef0d-71f0-4cff-8ddb-3a40ca5fe08a",
+  "flavor": "chorizo",
   "use_floating_ip": "false",
   "floating_ip_network": ""
 }
