@@ -5,9 +5,10 @@
   "os_display_name": "Ubuntu 20.04",
   "shutdown_command": "shutdown -P now",
   "ssh_username": "ubuntu",
-  "source_image": "",
+  "source_image": "e061e686-0086-477a-a273-ec20f7e80c96",
   "networks": "f558ef0d-71f0-4cff-8ddb-3a40ca5fe08a",
   "flavor": "chorizo",
+  "attach_config_drive": "true",
   "use_floating_ip": "false",
   "floating_ip_network": ""
 }
