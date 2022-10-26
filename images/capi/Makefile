@@ -316,6 +316,8 @@ OCI_BUILD_NAMES			   ?= oci-ubuntu-1804 oci-ubuntu-2004 oci-oracle-linux-8
 
 DO_BUILD_NAMES 			?=	do-centos-7 do-ubuntu-1804 do-ubuntu-2004
 
+OPENSTACK_BUILD_NAMES	?=	openstack-ubuntu-2004
+
 OSC_BUILD_NAMES 			?=	osc-centos-7 osc-ubuntu-2004
 
 OPENSTACK_BUILD_NAMES	?=	openstack-ubuntu-2004
