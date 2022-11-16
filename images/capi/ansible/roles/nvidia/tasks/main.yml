@@ -1,0 +1,51 @@
+---
+
+- name: unload nouveau
+  modprobe:
+    name: nouveau
+    state: absent
+  ignore_errors: true
+
+- name: Add NVIDIA package signing key
+  ansible.builtin.apt_key:
+    url: https://nvidia.github.io/libnvidia-container/gpgkey
+
+- name: Add NVIDIA package repo
+  ansible.builtin.apt_repository:
+    repo: "deb https://nvidia.github.io/libnvidia-container/stable/ubuntu20.04/$(ARCH) /"
+
+- name: Install packages for building NVIDIA driver kernel module
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - build-essential
+      - nvidia-container-toolkit
+      - wget
+      - nfs-common
+      - dkms
+
+- name: Download NVIDIA driver
+  become: true
+  get_url:
+    url: "{{ nvidia_installer_url }}"
+    dest: /tmp/NVIDIA-Linux-grid.run
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Install NVIDIA driver
+  become: true
+  ansible.builtin.command:
+    argv:
+      - "sh"
+      - "/tmp/NVIDIA-Linux-grid.run"
+      - "-s"
+      - "--dkms"
+      - "--no-cc-version-check"
+
+- name: Create GRIDD licensing config
+  become: true
+  template:
+    src: templates/gridd.conf.j2
+    dest: /etc/nvidia/gridd.conf
+    mode: 0644

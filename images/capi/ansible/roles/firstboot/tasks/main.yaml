@@ -17,3 +17,9 @@
 
 - include_tasks: qemu.yml
   when: packer_builder_type is search('qemu')
+  
+- name: perform a dist-upgrade
+  apt:
+    force_apt_get: True
+    update_cache: True
+    upgrade: dist
