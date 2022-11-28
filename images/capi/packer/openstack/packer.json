@@ -61,7 +61,7 @@
   "variables": {
     "floating_ip_network": "public",
     "image_disk_format": "raw",
-    "use_blockstorage_volume": "false",
+    "use_blockstorage_volume": "true",
     "volume_size": "10",
     "ansible_common_vars": "ansible_python_interpreter=/usr/bin/python3",
     "ansible_extra_vars": "",
