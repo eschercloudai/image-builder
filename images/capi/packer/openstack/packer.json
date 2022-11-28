@@ -17,7 +17,9 @@
       "type": "openstack",
       "use_blockstorage_volume": "{{user `use_blockstorage_volume`}}",
       "use_floating_ip": "{{user `use_floating_ip`}}",
-      "volume_size": "{{user `volume_size`}}"
+      "volume_size": "{{user `volume_size`}}",
+      "ssh_keypair_name": "{{user `ssh_keypair_name`}}",
+      "ssh_private_key_file": "{{user `ssh_private_key_file`}}"
     }
   ],
   "post-processors": [
@@ -41,11 +43,9 @@
     },
     {
       "ansible_env_vars": [
-        "ANSIBLE_SSH_ARGS='{{user `existing_ansible_ssh_args`}} -oHostKeyAlgorithms=+ssh-rsa -oPubkeyAcceptedAlgorithms=+ssh-rsa -o IdentitiesOnly=yes'"
+        "ANSIBLE_SSH_ARGS='{{user `existing_ansible_ssh_args`}} -o IdentitiesOnly=yes'"
       ],
       "extra_arguments": [
-        "--scp-extra-args",
-        "'-O'",
         "--extra-vars",
         "{{user `ansible_common_vars`}}",
         "--extra-vars",
@@ -55,14 +55,14 @@
       ],
       "playbook_file": "./ansible/node.yml",
       "type": "ansible",
-      "user": "builder"
+      "user": "core"
     }
   ],
   "variables": {
     "floating_ip_network": "public",
     "image_disk_format": "raw",
-    "use_blockstorage_volume": false,
-    "volume_size": 10,
+    "use_blockstorage_volume": "false",
+    "volume_size": "10",
     "ansible_common_vars": "ansible_python_interpreter=/usr/bin/python3",
     "ansible_extra_vars": "",
     "ansible_user_vars": "",
@@ -93,7 +93,7 @@
     "kubernetes_semver": null,
     "kubernetes_series": null,
     "kubernetes_source_type": null,
-    "ssh_username": "{{user `ssh_username`}}",
+    "ssh_username": "core",
     "use_floating_ip": "true"
   }
 }

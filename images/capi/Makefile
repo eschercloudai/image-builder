@@ -454,7 +454,7 @@ $(DO_VALIDATE_TARGETS): deps-do
 
 .PHONY: $(OPENSTACK_BUILD_TARGETS)
 $(OPENSTACK_BUILD_TARGETS): deps-openstack
-	packer build $(PACKER_NODE_FLAGS) -var-file="$(abspath packer/openstack/$(subst build-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/openstack/packer.json
+	packer build $(PACKER_NODE_FLAGS) -var-file="$(abspath packer/openstack/$(subst build-openstack-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/openstack/packer.json
 
 .PHONY: $(OPENSTACK_VALIDATE_TARGETS)
 $(OPENSTACK_VALIDATE_TARGETS): deps-openstack

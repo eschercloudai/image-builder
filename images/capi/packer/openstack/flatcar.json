@@ -1,6 +1,4 @@
 {
   "build_name": "flatcar",
-  "source_image": "flatcar",
-  "ssh_username": "flatcar",
-  "ansible_extra_vars": "oem_id=openstack"
+  "source_image": "flatcar"
 }
