@@ -10,6 +10,23 @@ command:
     stdout: []
     stderr: []
     timeout: 0
+{{if ne .Vars.containerd_wasm_shims_runtimes ""}}
+  containerd-shim-slight-v1:
+    exit-status: 1
+    stdout: [ ]
+    stderr: ["io.containerd.slight.v1: InvalidArgument(\"Shim namespace cannot be empty\")"]
+    timeout: 0
+  containerd-shim-spin-v1:
+    exit-status: 1
+    stdout: [ ]
+    stderr: ["io.containerd.spin.v1: InvalidArgument(\"Shim namespace cannot be empty\")"]
+    timeout: 0
+  grep -E 'io\.containerd\.(slight|spin)\.v1' /etc/containerd/config.toml:
+    exit-status: 0
+    stdout: [ ]
+    stderr: [ ]
+    timeout: 0
+{{end}}
 {{if eq .Vars.kubernetes_source_type "pkg"}}
 {{if eq .Vars.kubernetes_cni_source_type "pkg"}}
   crictl images | grep -v 'IMAGE ID' | awk -F'[ /]' '{print $2}' | sed 's/-{{ .Vars.arch }}//g' | sort:
@@ -125,6 +142,18 @@ command:
     stdout:
     - "True"
     timeout: 30000
+  Check HNS Control Flag:
+    exit-status: 0
+    exec: powershell -command "(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name HNSControlFlag).HNSControlFlag -eq 80"
+    stdout:
+    - True
+    timeout: 30000
+  Check WCIFS Flag:
+    exit-status: 0
+    exec: powershell -command "(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\wcifs' -Name WcifsSOPCountDisabled).WcifsSOPCountDisabled -eq 0"
+    stdout:
+    - True
+    timeout: 30000
 {{end}}
 {{ if eq .Vars.runtime "containerd" }}
   Correct Containerd Version:
@@ -159,8 +188,8 @@ command:
     exit-status: 0
     exec: netsh int ipv4 show dynamicportrange tcp
     stdout:
-    - "Start Port      : 33000"
-    - "Number of Ports : 32536"
+    - "Start Port      : 34000"
+    - "Number of Ports : 31536"
     timeout: 30000
 {{end}}
 
