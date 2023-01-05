@@ -74,6 +74,14 @@ deps-do:
 	hack/ensure-ansible.sh
 	hack/ensure-packer.sh
 
+.PHONY: deps-osc
+deps-osc: ## Installs/checks dependencies for Outscale builds
+deps-osc:
+	hack/ensure-ansible.sh
+	hack/ensure-packer.sh
+	hack/ensure-goss.sh
+	packer plugins install github.com/outscale/outscale
+   
 .PHONY: deps-gce
 deps-gce: ## Installs/checks dependencies for GCE builds
 deps-gce:
@@ -117,6 +125,7 @@ deps-oci: ## Installs/checks dependencies for OCI builds
 deps-oci:
 	hack/ensure-ansible.sh
 	hack/ensure-packer.sh
+	packer plugins install github.com/hashicorp/oracle
 
 .PHONY: deps-vbox
 deps-vbox: ## Installs/checks dependencies for VirtualBox builds
@@ -197,6 +206,22 @@ ifneq (,$(strip $(SSH_PUBLIC_KEY_FILE)))
 PACKER_FLAGS += -var ssh_public_key="$(shell cat ${SSH_PUBLIC_KEY_FILE})"
 endif
 
+# Since OpenSSH 9.0+ 'scp' uses SFTP protocol instead of legacy SCP protocol, which causes building errors like:
+#
+# bash: line 1: /usr/lib/sftp-server: No such file or directory\nscp: Connection closed\r\n""
+#
+# However, -O option is not available in older OpenSSH version, so we cannot always set it as an option to use.
+# To provide better out-of-the-box experience for users with newer versions of OpenSSH, we conditionally ensure
+# -O is used when used OpenSSH version requires it.
+#
+# See https://github.com/kubernetes-sigs/image-builder/issues/859 and
+# https://github.com/hashicorp/packer-plugin-ansible/issues/100 for more details.
+ifeq ($(shell test $$(ssh -V 2>&1 | cut -d _ -f2 | cut -d . -f1) -ge 9; echo $$?),0)
+	# Use ?= to retain possible existing value of environment variable. If it is already declared, we assume user to be
+	# aware of OpenSSH version they use and it is up to the user to specify "-O" option as well if needed.
+  export ANSIBLE_SCP_EXTRA_ARGS ?= "-O"
+endif
+
 # If DEBUG=1 then Packer will set -debug, enabling debug mode for builds, providing
 # more verbose logging
 ifeq (1,$(strip $(DEBUG)))
@@ -216,6 +241,7 @@ endif
 COMMON_NODE_VAR_FILES :=	packer/config/kubernetes.json \
 					packer/config/cni.json \
 					packer/config/containerd.json \
+					packer/config/wasm-shims.json \
 					packer/config/ansible-args.json \
 					packer/config/goss-args.json \
 					packer/config/common.json \
@@ -293,8 +319,8 @@ NODE_OVA_VSPHERE_BUILD_NAMES		:=	$(addprefix node-ova-vsphere-,$(PLATFORMS_AND_V
 NODE_OVA_VSPHERE_BASE_BUILD_NAMES		:=	$(addprefix node-ova-vsphere-base-,$(PLATFORMS_AND_VERSIONS))
 NODE_OVA_VSPHERE_CLONE_BUILD_NAMES		:=	$(addprefix node-ova-vsphere-clone-,$(PLATFORMS_AND_VERSIONS))
 
-AMI_BUILD_NAMES			   ?= ami-centos-7 ami-ubuntu-1804 ami-ubuntu-2004 ami-amazon-2 ami-flatcar ami-windows-2019 ami-windows-2004 ami-rockylinux-8
-GCE_BUILD_NAMES			   ?= gce-ubuntu-1804 gce-ubuntu-2004
+AMI_BUILD_NAMES			   ?= ami-centos-7 ami-ubuntu-1804 ami-ubuntu-2004 ami-ubuntu-2204 ami-amazon-2 ami-flatcar ami-windows-2019 ami-windows-2004 ami-rockylinux-8
+GCE_BUILD_NAMES			   ?= gce-ubuntu-1804 gce-ubuntu-2004 gce-ubuntu-2204
 
 # Make needs these lists to be space delimited, no quotes
 VHD_TARGETS := $(shell grep VHD_TARGETS azure_targets.sh | sed 's/VHD_TARGETS=//' | tr -d \")
@@ -304,11 +330,13 @@ AZURE_BUILD_VHD_NAMES	   ?= $(addprefix azure-vhd-,$(VHD_TARGETS))
 AZURE_BUILD_SIG_NAMES	   ?= $(addprefix azure-sig-,$(SIG_TARGETS))
 AZURE_BUILD_SIG_GEN2_NAMES ?= $(addsuffix -gen2,$(addprefix azure-sig-,$(SIG_GEN2_TARGETS)))
 
-OCI_BUILD_NAMES			   ?= oci-ubuntu-1804 oci-ubuntu-2004 oci-oracle-linux-8
+OCI_BUILD_NAMES			   ?= oci-ubuntu-1804 oci-ubuntu-2004 oci-ubuntu-2204 oci-oracle-linux-8
 
 DO_BUILD_NAMES 			?=	do-centos-7 do-ubuntu-1804 do-ubuntu-2004
 
 OPENSTACK_BUILD_NAMES	?=	openstack-ubuntu-2004
+
+OSC_BUILD_NAMES 			?=	osc-ubuntu-2004
 
 QEMU_BUILD_NAMES			?=	qemu-ubuntu-1804 qemu-ubuntu-2004 qemu-centos-7 qemu-ubuntu-2004-efi qemu-rhel-8 qemu-rockylinux-8 qemu-flatcar
 QEMU_KUBEVIRT_BUILD_NAMES	:= $(addprefix kubevirt-,$(QEMU_BUILD_NAMES))
@@ -351,6 +379,8 @@ RAW_BUILD_TARGETS      := $(addprefix build-,$(RAW_BUILD_NAMES))
 RAW_VALIDATE_TARGETS   := $(addprefix validate-,$(RAW_BUILD_NAMES))
 OCI_BUILD_TARGETS	:= $(addprefix build-,$(OCI_BUILD_NAMES))
 OCI_VALIDATE_TARGETS	:= $(addprefix validate-,$(OCI_BUILD_NAMES))
+OSC_BUILD_TARGETS 	:= $(addprefix build-,$(OSC_BUILD_NAMES))
+OSC_VALIDATE_TARGETS       := $(addprefix validate-,$(OSC_BUILD_NAMES))
 VBOX_BUILD_TARGETS      := $(addprefix build-,$(VBOX_BUILD_NAMES))
 VBOX_VALIDATE_TARGETS   := $(addprefix validate-,$(VBOX_BUILD_NAMES))
 POWERVS_BUILD_TARGETS      := $(addprefix build-,$(POWERVS_BUILD_NAMES))
@@ -476,6 +506,14 @@ $(OCI_BUILD_TARGETS): deps-oci
 $(OCI_VALIDATE_TARGETS): deps-oci
 	packer validate $(PACKER_NODE_FLAGS) -var-file="$(abspath packer/oci/$(subst validate-oci-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/oci/packer.json
 
+.PHONY: $(OSC_BUILD_TARGETS)
+$(OSC_BUILD_TARGETS): deps-osc 
+	packer build $(PACKER_NODE_FLAGS) -var-file="$(abspath packer/outscale/$(subst build-osc-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/outscale/packer.json
+
+.PHONY: $(OSC_VALIDATE_TARGETS)
+$(OSC_VALIDATE_TARGETS): deps-osc
+	packer validate $(PACKER_NODE_FLAGS) -var-file="$(abspath packer/outscale/$(subst validate-osc-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/outscale/packer.json
+
 .PHONY: $(VBOX_BUILD_TARGETS)
 $(VBOX_BUILD_TARGETS): deps-vbox
 	packer build $(if $(findstring windows,$@),$(PACKER_WINDOWS_NODE_FLAGS),$(PACKER_NODE_FLAGS)) -var-file="packer/vbox/packer-common.json" -var-file="$(abspath packer/vbox/$(subst build-vbox-,,$@).json)" -only=virtualbox-iso $(ABSOLUTE_PACKER_VAR_FILES) packer/vbox/packer-$(if $(findstring windows,$@),windows).json
@@ -533,6 +571,7 @@ build-ami-amazon-2: ## Builds Amazon-2 Linux AMI
 build-ami-centos-7: ## Builds CentOS 7 AMI
 build-ami-ubuntu-1804: ## Builds Ubuntu 18.04 AMI
 build-ami-ubuntu-2004: ## Builds Ubuntu 20.04 AMI
+build-ami-ubuntu-2204: ## Builds Ubuntu 22.04 AMI
 build-ami-rockylinux-8: ## Builds RockyLinux 8 AMI
 build-ami-flatcar: ## Builds Flatcar
 build-ami-windows-2019: ## Build Windows Server 2019 AMI Packer config
@@ -541,6 +580,7 @@ build-ami-all: $(AMI_BUILD_TARGETS) ## Builds all AMIs
 
 build-azure-sig-ubuntu-1804: ## Builds Ubuntu 18.04 Azure managed image in Shared Image Gallery
 build-azure-sig-ubuntu-2004: ## Builds Ubuntu 20.04 Azure managed image in Shared Image Gallery
+build-azure-sig-ubuntu-2204: ## Builds Ubuntu 22.04 Azure managed image in Shared Image Gallery
 build-azure-sig-centos-7: ## Builds CentOS 7 Azure managed image in Shared Image Gallery
 build-azure-sig-windows-2019: ## Builds Windows Server 2019 Azure managed image in Shared Image Gallery
 build-azure-sig-windows-2019-containerd: ## Builds Windows Server 2019 with containerd Azure managed image in Shared Image Gallery
@@ -548,6 +588,7 @@ build-azure-sig-windows-2022-containerd: ## Builds Windows Server 2022 with cont
 build-azure-sig-windows-2004: ## Builds Windows Server 2004 SAC Azure managed image in Shared Image Gallery
 build-azure-vhd-ubuntu-1804: ## Builds Ubuntu 18.04 VHD image for Azure
 build-azure-vhd-ubuntu-2004: ## Builds Ubuntu 20.04 VHD image for Azure
+build-azure-vhd-ubuntu-2204: ## Builds Ubuntu 22.04 VHD image for Azure
 build-azure-vhd-centos-7: ## Builds CentOS 7 VHD image for Azure
 build-azure-vhd-windows-2019: ## Builds for Windows Server 2019
 build-azure-vhd-windows-2019-containerd: ## Builds for Windows Server 2019 with containerd
@@ -558,6 +599,7 @@ build-azure-sig-flatcar: ## Builds Flatcar Azure managed image in Shared Image G
 build-azure-sig-flatcar-gen2: ## Builds Flatcar Azure Gen2 managed image in Shared Image Gallery
 build-azure-sig-ubuntu-1804-gen2: ## Builds Ubuntu 18.04 Gen2 managed image in Shared Image Gallery
 build-azure-sig-ubuntu-2004-gen2: ## Builds Ubuntu 20.04 Gen2 managed image in Shared Image Gallery
+build-azure-sig-ubuntu-2204-gen2: ## Builds Ubuntu 22.04 Gen2 managed image in Shared Image Gallery
 build-azure-vhds: $(AZURE_BUILD_VHD_TARGETS) ## Builds all Azure VHDs
 build-azure-sigs: $(AZURE_BUILD_SIG_TARGETS) $(AZURE_BUILD_SIG_GEN2_TARGETS) ## Builds all Azure Shared Image Gallery images
 
@@ -568,6 +610,7 @@ build-do-all: $(DO_BUILD_TARGETS) ## Builds all DigitalOcean Snapshot
 
 build-gce-ubuntu-1804: ## Builds the GCE ubuntu-1804 image
 build-gce-ubuntu-2004: ## Builds the GCE ubuntu-2004 image
+build-gce-ubuntu-2204: ## Builds the GCE ubuntu-2204 image
 build-gce-all: $(GCE_BUILD_TARGETS) ## Builds all GCE image
 
 build-node-ova-local-centos-7: ## Builds CentOS 7 Node OVA w local hypervisor
@@ -650,8 +693,12 @@ build-raw-all: $(RAW_BUILD_TARGETS) ## Builds all RAW images
 
 build-oci-ubuntu-1804: ## Builds the OCI ubuntu-1804 image
 build-oci-ubuntu-2004: ## Builds the OCI ubuntu-2004 image
+build-oci-ubuntu-2204: ## Builds the OCI ubuntu-2204 image
 build-oci-oracle-linux-8: ## Builds the OCI Oracle Linux 8.x image
 build-oci-all: $(OCI_BUILD_TARGETS) ## Builds all OCI image
+
+build-osc-ubuntu-2004: ## Builds Ubuntu 20.04 Outscale Snapshot
+build-osc-all: $(OSC_BUILD_TARGETS) ## Builds all Outscale Snapshot
 
 build-vbox-windows-2019: ## Builds for Windows Server 2019 Node VirtualBox w local hypervisor
 build-vbox-all: $(VBOX_BUILD_TARGETS) ## Builds all Qemu images
@@ -669,6 +716,7 @@ validate-ami-rockylinux-8: ## Validates RockyLinux 8 AMI Packer config
 validate-ami-flatcar: ## Validates Flatcar AMI Packer config
 validate-ami-ubuntu-1804: ## Validates Ubuntu 18.04 AMI Packer config
 validate-ami-ubuntu-2004: ## Validates Ubuntu 20.04 AMI Packer config
+validate-ami-ubuntu-2204: ## Validates Ubuntu 22.04 AMI Packer config
 validate-ami-windows-2019: ## Validates Windows Server 2019 AMI Packer config
 validate-ami-windows-2004: ## Validates Windows Server 2004 SAC AMI Packer config
 validate-ami-all: $(AMI_VALIDATE_TARGETS) ## Validates all AMIs Packer config
@@ -676,6 +724,7 @@ validate-ami-all: $(AMI_VALIDATE_TARGETS) ## Validates all AMIs Packer config
 validate-azure-sig-centos-7: ## Validates CentOS 7 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-1804: ## Validates Ubuntu 18.04 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-2004: ## Validates Ubuntu 20.04 Azure managed image in Shared Image Gallery Packer config
+validate-azure-sig-ubuntu-2204: ## Validates Ubuntu 22.04 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-windows-2019: ## Validate Windows Server 2019 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-windows-2019-containerd: ## Validate Windows Server 2019 with containerd Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-windows-2022-containerd: ## Validate Windows Server 2022 with containerd Azure managed image in Shared Image Gallery Packer config
@@ -683,6 +732,7 @@ validate-azure-sig-windows-2004: ## Validate Windows Server 2004 SAC Azure manag
 validate-azure-vhd-centos-7: ## Validates CentOS 7 VHD image Azure Packer config
 validate-azure-vhd-ubuntu-1804: ## Validates Ubuntu 18.04 VHD image Azure Packer config
 validate-azure-vhd-ubuntu-2004: ## Validates Ubuntu 20.04 VHD image Azure Packer config
+validate-azure-vhd-ubuntu-2204: ## Validates Ubuntu 22.04 VHD image Azure Packer config
 validate-azure-vhd-windows-2019: ## Validate Windows Server 2019 VHD image Azure Packer config
 validate-azure-vhd-windows-2019-containerd: ## Validate Windows Server 2019 VHD with containerd image Azure Packer config
 validate-azure-vhd-windows-2022-containerd: ## Validate Windows Server 2022 VHD with containerd image Azure Packer config
@@ -690,6 +740,7 @@ validate-azure-vhd-windows-2004: ## Validate Windows Server 2004 SAC VHD image A
 validate-azure-sig-centos-7-gen2: ## Validates CentOS 7 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-1804-gen2: ## Validates Ubuntu 18.04 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-2004-gen2: ## Validates Ubuntu 20.04 Azure managed image in Shared Image Gallery Packer config
+validate-azure-sig-ubuntu-2204-gen2: ## Validates Ubuntu 22.04 Azure managed image in Shared Image Gallery Packer config
 validate-azure-all: $(AZURE_VALIDATE_SIG_TARGETS) $(AZURE_VALIDATE_VHD_TARGETS) $(AZURE_VALIDATE_SIG_GEN2_TARGETS) ## Validates all images for Azure Packer config
 
 validate-do-ubuntu-1804: ## Validates Ubuntu 18.04 DigitalOcean Snapshot Packer config
@@ -699,6 +750,7 @@ validate-do-all: $(DO_VALIDATE_TARGETS) ## Validates all DigitalOcean Snapshot P
 
 validate-gce-ubuntu-1804: ## Validates Ubuntu 18.04 GCE Snapshot Packer config
 validate-gce-ubuntu-2004: ## Validates Ubuntu 20.04 GCE Snapshot Packer config
+validate-gce-ubuntu-2204: ## Validates Ubuntu 22.04 GCE Snapshot Packer config
 validate-gce-all: $(GCE_VALIDATE_TARGETS) ## Validates all GCE Snapshot Packer config
 
 validate-node-ova-local-centos-7: ## Validates CentOS 7 Node OVA Packer config w local hypervisor
@@ -747,8 +799,12 @@ validate-raw-all: $(RAW_VALIDATE_TARGETS) ## Validates all RAW Packer config
 
 validate-oci-ubuntu-1804: ## Validates the OCI ubuntu-1804 image packer config
 validate-oci-ubuntu-2004: ## Validates the OCI ubuntu-2004 image packer config
+validate-oci-ubuntu-2204: ## Validates the OCI ubuntu-2204 image packer config
 validate-oci-oracle-linux-8: ## Validates the OCI Oracle Linux 8.x image packer config
 validate-oci-all: $(OCI_VALIDATE_TARGETS) ## Validates all OCI image packer config
+
+validate-osc-ubuntu-2004: ## Validates Ubuntu 20.04 Outscale Snapshot Packer config
+validate-osc-all: $(OSC_VALIDATE_TARGETS) ## Validates all Outscale Snapshot Packer config
 
 validate-vbox-windows-2019: ## Validates Windows Server 2019 Node VirtualBox Packer config w local hypervisor
 validate-vbox-all: $(VBOX_VALIDATE_TARGETS) ## Validates all RAW Packer config
@@ -767,6 +823,7 @@ validate-all: validate-ami-all \
 	validate-qemu-all \
 	validate-raw-all \
 	validate-oci-all \
+        validate-osc-all \
 	validate-vbox-all \
 	validate-powervs-all \
 	validate-nutanix-all

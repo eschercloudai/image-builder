@@ -35,14 +35,14 @@ mkdir -p "${ARTIFACTS}/azure-sigs" "${ARTIFACTS}/azure-vhds"
 source azure_targets.sh
 
 # Convert single line entries into arrays
-IFS=' ' read -r -a VHD_TARGETS <<< "${VHD_TARGETS}"
-IFS=' ' read -r -a SIG_TARGETS <<< "${SIG_TARGETS}"
-IFS=' ' read -r -a SIG_GEN2_TARGETS <<< "${SIG_GEN2_TARGETS}"
+IFS=' ' read -r -a VHD_CI_TARGETS <<< "${VHD_CI_TARGETS}"
+IFS=' ' read -r -a SIG_CI_TARGETS <<< "${SIG_CI_TARGETS}"
+IFS=' ' read -r -a SIG_GEN2_CI_TARGETS <<< "${SIG_GEN2_CI_TARGETS}"
 
 # Append the "gen2" targets to the original SIG list
-for element in "${SIG_GEN2_TARGETS[@]}"
+for element in "${SIG_GEN2_CI_TARGETS[@]}"
 do
-    SIG_TARGETS+=("${element}-gen2")
+    SIG_CI_TARGETS+=("${element}-gen2")
 done
 
 # shellcheck source=parse-prow-creds.sh
@@ -78,19 +78,26 @@ trap cleanup EXIT
 
 make deps-azure
 
+# Latest Flatcar version is often available on Azure with a delay, so resolve ourselves
+az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
+get_flatcar_version() {
+    az vm image show --urn kinvolk:flatcar-container-linux-free:stable:latest --query 'name' -o tsv
+}
+export FLATCAR_VERSION="$(get_flatcar_version)"
+
 # Pre-pulling windows images takes 10-20 mins
 # Disable them for CI runs so don't run into timeouts
 export PACKER_VAR_FILES="packer/azure/scripts/disable-windows-prepull.json scripts/ci-disable-goss-inspect.json"
 
 declare -A PIDS
 if [[ "${AZURE_BUILD_FORMAT:-vhd}" == "sig" ]]; then
-    for target in ${SIG_TARGETS[@]};
+    for target in ${SIG_CI_TARGETS[@]};
     do
         make build-azure-sig-${target} > ${ARTIFACTS}/azure-sigs/${target}.log 2>&1 &
         PIDS["sig-${target}"]=$!
     done
 else
-    for target in ${VHD_TARGETS[@]};
+    for target in ${VHD_CI_TARGETS[@]};
     do
         make build-azure-vhd-${target} > ${ARTIFACTS}/azure-vhds/${target}.log 2>&1 &
         PIDS["vhd-${target}"]=$!
