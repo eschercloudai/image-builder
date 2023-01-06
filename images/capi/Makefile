@@ -125,6 +125,7 @@ deps-oci: ## Installs/checks dependencies for OCI builds
 deps-oci:
 	hack/ensure-ansible.sh
 	hack/ensure-packer.sh
+	packer plugins install github.com/hashicorp/oracle
 
 .PHONY: deps-vbox
 deps-vbox: ## Installs/checks dependencies for VirtualBox builds
@@ -205,6 +206,22 @@ ifneq (,$(strip $(SSH_PUBLIC_KEY_FILE)))
 PACKER_FLAGS += -var ssh_public_key="$(shell cat ${SSH_PUBLIC_KEY_FILE})"
 endif
 
+# Since OpenSSH 9.0+ 'scp' uses SFTP protocol instead of legacy SCP protocol, which causes building errors like:
+#
+# bash: line 1: /usr/lib/sftp-server: No such file or directory\nscp: Connection closed\r\n""
+#
+# However, -O option is not available in older OpenSSH version, so we cannot always set it as an option to use.
+# To provide better out-of-the-box experience for users with newer versions of OpenSSH, we conditionally ensure
+# -O is used when used OpenSSH version requires it.
+#
+# See https://github.com/kubernetes-sigs/image-builder/issues/859 and
+# https://github.com/hashicorp/packer-plugin-ansible/issues/100 for more details.
+ifeq ($(shell test $$(ssh -V 2>&1 | cut -d _ -f2 | cut -d . -f1) -ge 9; echo $$?),0)
+	# Use ?= to retain possible existing value of environment variable. If it is already declared, we assume user to be
+	# aware of OpenSSH version they use and it is up to the user to specify "-O" option as well if needed.
+  export ANSIBLE_SCP_EXTRA_ARGS ?= "-O"
+endif
+
 # If DEBUG=1 then Packer will set -debug, enabling debug mode for builds, providing
 # more verbose logging
 ifeq (1,$(strip $(DEBUG)))
@@ -224,6 +241,7 @@ endif
 COMMON_NODE_VAR_FILES :=	packer/config/kubernetes.json \
 					packer/config/cni.json \
 					packer/config/containerd.json \
+					packer/config/wasm-shims.json \
 					packer/config/ansible-args.json \
 					packer/config/goss-args.json \
 					packer/config/common.json \
@@ -301,8 +319,8 @@ NODE_OVA_VSPHERE_BUILD_NAMES		:=	$(addprefix node-ova-vsphere-,$(PLATFORMS_AND_V
 NODE_OVA_VSPHERE_BASE_BUILD_NAMES		:=	$(addprefix node-ova-vsphere-base-,$(PLATFORMS_AND_VERSIONS))
 NODE_OVA_VSPHERE_CLONE_BUILD_NAMES		:=	$(addprefix node-ova-vsphere-clone-,$(PLATFORMS_AND_VERSIONS))
 
-AMI_BUILD_NAMES			   ?= ami-centos-7 ami-ubuntu-1804 ami-ubuntu-2004 ami-amazon-2 ami-flatcar ami-windows-2019 ami-windows-2004 ami-rockylinux-8
-GCE_BUILD_NAMES			   ?= gce-ubuntu-1804 gce-ubuntu-2004
+AMI_BUILD_NAMES			   ?= ami-centos-7 ami-ubuntu-1804 ami-ubuntu-2004 ami-ubuntu-2204 ami-amazon-2 ami-flatcar ami-windows-2019 ami-windows-2004 ami-rockylinux-8
+GCE_BUILD_NAMES			   ?= gce-ubuntu-1804 gce-ubuntu-2004 gce-ubuntu-2204
 
 # Make needs these lists to be space delimited, no quotes
 VHD_TARGETS := $(shell grep VHD_TARGETS azure_targets.sh | sed 's/VHD_TARGETS=//' | tr -d \")
@@ -318,7 +336,7 @@ DO_BUILD_NAMES 			?=	do-centos-7 do-ubuntu-1804 do-ubuntu-2004
 
 OPENSTACK_BUILD_NAMES	?=	openstack-ubuntu-2004	openstack-ubuntu-2204
 
-OSC_BUILD_NAMES 			?=	osc-centos-7 osc-ubuntu-2004
+OSC_BUILD_NAMES 			?=	osc-ubuntu-2004
 
 QEMU_BUILD_NAMES			?=	qemu-ubuntu-1804 qemu-ubuntu-2004 qemu-centos-7 qemu-ubuntu-2004-efi qemu-rhel-8 qemu-rockylinux-8 qemu-flatcar
 QEMU_KUBEVIRT_BUILD_NAMES	:= $(addprefix kubevirt-,$(QEMU_BUILD_NAMES))
@@ -553,6 +571,7 @@ build-ami-amazon-2: ## Builds Amazon-2 Linux AMI
 build-ami-centos-7: ## Builds CentOS 7 AMI
 build-ami-ubuntu-1804: ## Builds Ubuntu 18.04 AMI
 build-ami-ubuntu-2004: ## Builds Ubuntu 20.04 AMI
+build-ami-ubuntu-2204: ## Builds Ubuntu 22.04 AMI
 build-ami-rockylinux-8: ## Builds RockyLinux 8 AMI
 build-ami-flatcar: ## Builds Flatcar
 build-ami-windows-2019: ## Build Windows Server 2019 AMI Packer config
@@ -591,6 +610,7 @@ build-do-all: $(DO_BUILD_TARGETS) ## Builds all DigitalOcean Snapshot
 
 build-gce-ubuntu-1804: ## Builds the GCE ubuntu-1804 image
 build-gce-ubuntu-2004: ## Builds the GCE ubuntu-2004 image
+build-gce-ubuntu-2204: ## Builds the GCE ubuntu-2204 image
 build-gce-all: $(GCE_BUILD_TARGETS) ## Builds all GCE image
 
 build-node-ova-local-centos-7: ## Builds CentOS 7 Node OVA w local hypervisor
@@ -679,7 +699,6 @@ build-oci-oracle-linux-8: ## Builds the OCI Oracle Linux 8.x image
 build-oci-all: $(OCI_BUILD_TARGETS) ## Builds all OCI image
 
 build-osc-ubuntu-2004: ## Builds Ubuntu 20.04 Outscale Snapshot
-build-osc-centos-7: ## Builds Centos 7 Outscale Snapshot
 build-osc-all: $(OSC_BUILD_TARGETS) ## Builds all Outscale Snapshot
 
 build-vbox-windows-2019: ## Builds for Windows Server 2019 Node VirtualBox w local hypervisor
@@ -698,6 +717,7 @@ validate-ami-rockylinux-8: ## Validates RockyLinux 8 AMI Packer config
 validate-ami-flatcar: ## Validates Flatcar AMI Packer config
 validate-ami-ubuntu-1804: ## Validates Ubuntu 18.04 AMI Packer config
 validate-ami-ubuntu-2004: ## Validates Ubuntu 20.04 AMI Packer config
+validate-ami-ubuntu-2204: ## Validates Ubuntu 22.04 AMI Packer config
 validate-ami-windows-2019: ## Validates Windows Server 2019 AMI Packer config
 validate-ami-windows-2004: ## Validates Windows Server 2004 SAC AMI Packer config
 validate-ami-all: $(AMI_VALIDATE_TARGETS) ## Validates all AMIs Packer config
@@ -731,6 +751,7 @@ validate-do-all: $(DO_VALIDATE_TARGETS) ## Validates all DigitalOcean Snapshot P
 
 validate-gce-ubuntu-1804: ## Validates Ubuntu 18.04 GCE Snapshot Packer config
 validate-gce-ubuntu-2004: ## Validates Ubuntu 20.04 GCE Snapshot Packer config
+validate-gce-ubuntu-2204: ## Validates Ubuntu 22.04 GCE Snapshot Packer config
 validate-gce-all: $(GCE_VALIDATE_TARGETS) ## Validates all GCE Snapshot Packer config
 
 validate-node-ova-local-centos-7: ## Validates CentOS 7 Node OVA Packer config w local hypervisor
@@ -784,7 +805,6 @@ validate-oci-oracle-linux-8: ## Validates the OCI Oracle Linux 8.x image packer 
 validate-oci-all: $(OCI_VALIDATE_TARGETS) ## Validates all OCI image packer config
 
 validate-osc-ubuntu-2004: ## Validates Ubuntu 20.04 Outscale Snapshot Packer config
-validate-osc-centos-7: ## Validates Centos 7 Outscale Snapshot Packer config
 validate-osc-all: $(OSC_VALIDATE_TARGETS) ## Validates all Outscale Snapshot Packer config
 
 validate-vbox-windows-2019: ## Validates Windows Server 2019 Node VirtualBox Packer config w local hypervisor
