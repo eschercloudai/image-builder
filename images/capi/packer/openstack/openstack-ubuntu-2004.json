@@ -1,6 +1,7 @@
 {
   "build_name": "ubuntu-2204",
   "distro_name": "ubuntu",
+  "os_version": "20.04",
   "guest_os_type": "ubuntu-64",
   "os_display_name": "Ubuntu 22.04",
   "shutdown_command": "shutdown -P now",

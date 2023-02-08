@@ -10,19 +10,31 @@
   ansible.builtin.apt_key:
     url: https://nvidia.github.io/libnvidia-container/gpgkey
 
-- name: Add NVIDIA package repo
-  ansible.builtin.apt_repository:
-    repo: "deb https://nvidia.github.io/libnvidia-container/stable/ubuntu20.04/$(ARCH) /"
-
 - name: Install packages for building NVIDIA driver kernel module
   become: true
   ansible.builtin.apt:
     pkg:
       - build-essential
-      - nvidia-container-toolkit
       - wget
-      - nfs-common
       - dkms
+
+- name: Make /etc/nvidia/ClientConfigToken directory
+  become: true
+  file:
+    path: /etc/nvidia/ClientConfigToken
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Download NVIDIA License Token
+  become: true
+  get_url:
+    url: "{{ nvidia_tok_url }}"
+    dest: /etc/nvidia/ClientConfigToken/client_configuration_token.tok
+    owner: root
+    group: root
+    mode: 0744
 
 - name: Download NVIDIA driver
   become: true
