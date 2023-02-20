@@ -104,7 +104,7 @@ deps-openstack:
 	hack/ensure-ansible.sh
 	hack/ensure-packer.sh
 	hack/ensure-goss.sh
-#TODO    hack/ensure-openstack.sh
+	hack/ensure-nvidia.sh # Allows for building Nvidia driver within the image.
 
 .PHONY: deps-qemu
 deps-qemu: ## Installs/checks dependencies for QEMU builds
