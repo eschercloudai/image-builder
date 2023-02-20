@@ -9,14 +9,15 @@
 - name: Add NVIDIA package signing key
   ansible.builtin.apt_key:
     url: https://nvidia.github.io/libnvidia-container/gpgkey
+  when: ansible_distribution == "Ubuntu"
 
 - name: Install packages for interacting with s3 endpoint
   become: true
   ansible.builtin.apt:
     pkg:
-      - python3
       - python3-boto3
       - python3-botocore
+  when: ansible_distribution == "Ubuntu"
 
 - name: Install packages for building NVIDIA driver kernel module
   become: true
@@ -25,6 +26,7 @@
       - build-essential
       - wget
       - dkms
+  when: ansible_distribution == "Ubuntu"
 
 - name: Make /etc/nvidia/ClientConfigToken directory
   become: true
@@ -96,3 +98,4 @@
     pkg:
       - python3-boto3
       - python3-botocore
+  when: ansible_distribution == "Ubuntu"
