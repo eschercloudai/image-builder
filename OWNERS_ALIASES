@@ -2,18 +2,16 @@
 
 aliases:
   image-builder-maintainers:
-    - CecileRobertMichon
-    - codenrhoden
-    - detiber
     - jsturtevant
-    - justinsb
     - kkeshavamurthy
-    - moshloop
+    - mboersma
   image-builder-reviewers:
     - EleanorRigby
     - randomvariable
+    - AverageMarcus
   image-builder-azure-reviewers:
     - jsturtevant
+    - mboersma
   image-builder-openstack-reviewers:
     - hidekazuna
   image-builder-cloudstack-reviewers:
@@ -38,7 +36,6 @@ aliases:
     - richardcase
     - sedefsavas
   cluster-api-azure-maintainers:
-    - alexeldeib
     - CecileRobertMichon
     - devigned
     - jackfrancis
@@ -74,6 +71,10 @@ aliases:
     - randomvariable
     - srm09
     - yastij
+  cluster-api-nutanix-maintainers:
+    - tuxtof
+  cluster-api-nutanix-reviewers:
+    - tuxtof
   kops-maintainers:
     - hakman
     - justinsb

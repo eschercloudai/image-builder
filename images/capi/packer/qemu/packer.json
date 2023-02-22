@@ -46,7 +46,7 @@
     {
       "environment_vars": [
         "OUTPUT_DIR={{user `output_directory`}}",
-        "ARTIFACT_NAME={{user `artificat_name`}}",
+        "ARTIFACT_NAME={{user `artifact_name`}}",
         "KUBEVIRT={{user `kubevirt`}}"
       ],
       "inline": [
@@ -68,7 +68,7 @@
     },
     {
       "ansible_env_vars": [
-        "ANSIBLE_SSH_ARGS='{{user `existing_ansible_ssh_args`}} -o IdentitiesOnly=yes'",
+        "ANSIBLE_SSH_ARGS='{{user `existing_ansible_ssh_args`}} {{user `ansible_common_ssh_args`}}'",
         "KUBEVIRT={{user `kubevirt`}}"
       ],
       "extra_arguments": [
@@ -79,7 +79,9 @@
         "--extra-vars",
         "{{user `ansible_extra_vars`}}",
         "--extra-vars",
-        "{{user `ansible_user_vars`}}"
+        "{{user `ansible_user_vars`}}",
+        "--scp-extra-args",
+        "{{user `ansible_scp_extra_args`}}"
       ],
       "playbook_file": "./ansible/firstboot.yml",
       "type": "ansible",
@@ -95,7 +97,7 @@
     },
     {
       "ansible_env_vars": [
-        "ANSIBLE_SSH_ARGS='{{user `existing_ansible_ssh_args`}} -o IdentitiesOnly=yes'",
+        "ANSIBLE_SSH_ARGS='{{user `existing_ansible_ssh_args`}} {{user `ansible_common_ssh_args`}}'",
         "KUBEVIRT={{user `kubevirt`}}"
       ],
       "extra_arguments": [
@@ -106,7 +108,9 @@
         "--extra-vars",
         "{{user `ansible_extra_vars`}}",
         "--extra-vars",
-        "{{user `ansible_user_vars`}}"
+        "{{user `ansible_user_vars`}}",
+        "--scp-extra-args",
+        "{{user `ansible_scp_extra_args`}}"
       ],
       "playbook_file": "./ansible/node.yml",
       "type": "ansible",
@@ -147,7 +151,7 @@
     "ansible_common_vars": "",
     "ansible_extra_vars": "ansible_python_interpreter=/usr/bin/python3",
     "ansible_user_vars": "",
-    "artificat_name": "{{user `build_name`}}-kube-{{user `kubernetes_semver`}}",
+    "artifact_name": "{{user `build_name`}}-kube-{{user `kubernetes_semver`}}",
     "boot_media_path": "http://{{ .HTTPIP }}:{{ .HTTPPort }}",
     "boot_wait": "10s",
     "build_timestamp": "{{timestamp}}",
