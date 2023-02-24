@@ -1,4 +1,5 @@
 {
   "build_name": "ubuntu-2004",
-  "ssh_username": "ubuntu"
+  "ssh_username": "ubuntu",
+  "distro_name": "ubuntu"
 }
