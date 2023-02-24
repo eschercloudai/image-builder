@@ -6,20 +6,21 @@
       "floating_ip_network": "{{user `floating_ip_network`}}",
       "image_disk_format": "{{user `image_disk_format`}}",
       "image_name": "{{user `image_name`}}",
+      "image_tags": "{{user `image_tags`}}",
       "image_visibility": "{{user `image_visibility`}}",
+      "instance_name": "{{user `instance_name`}}",
       "networks": "{{user `networks`}}",
-      "security_groups": [
-        "default"
-      ],
+      "security_groups": "{{user `security_groups`}}",
       "source_image": "{{user `source_image`}}",
+      "ssh_keypair_name": "{{user `ssh_keypair_name`}}",
+      "ssh_private_key_file": "{{user `ssh_private_key_file`}}",
       "ssh_timeout": "2h",
       "ssh_username": "{{user `ssh_username`}}",
       "type": "openstack",
       "use_blockstorage_volume": "{{user `use_blockstorage_volume`}}",
       "use_floating_ip": "{{user `use_floating_ip`}}",
       "volume_size": "{{user `volume_size`}}",
-      "ssh_keypair_name": "{{user `ssh_keypair_name`}}",
-      "ssh_private_key_file": "{{user `ssh_private_key_file`}}"
+      "volume_type": "{{user `volume_type`}}"
     }
   ],
   "post-processors": [
@@ -91,10 +92,6 @@
     }
   ],
   "variables": {
-    "floating_ip_network": "public",
-    "image_disk_format": "raw",
-    "use_blockstorage_volume": "true",
-    "volume_size": "10",
     "ansible_common_vars": "ansible_python_interpreter=/usr/bin/python3",
     "ansible_extra_vars": "",
     "ansible_user_vars": "",
@@ -106,8 +103,12 @@
     "crictl_url": "https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{user `crictl_version`}}/crictl-v{{user `crictl_version`}}-linux-amd64.tar.gz",
     "crictl_version": null,
     "existing_ansible_ssh_args": "{{env `ANSIBLE_SSH_ARGS`}}",
+    "floating_ip_network": "public",
+    "image_disk_format": "qcow2",
     "image_name": "{{user `build_name`}}-kube-{{user `kubernetes_semver`}}",
+    "image_tags": "k8s,capi",
     "image_visibility": "private",
+    "instance_name": "{{user `image_name` | replace_all \".\" \"-\"}}",
     "kubernetes_cni_deb_version": null,
     "kubernetes_cni_http_source": null,
     "kubernetes_cni_semver": null,
@@ -125,7 +126,11 @@
     "kubernetes_semver": null,
     "kubernetes_series": null,
     "kubernetes_source_type": null,
-    "ssh_username": "core",
-    "use_floating_ip": "true"
+    "security_groups": "default",
+    "ssh_username": "{{user `ssh_username`}}",
+    "use_blockstorage_volume": "true",
+    "use_floating_ip": "true",
+    "volume_size": "10",
+    "volume_type": null
   }
 }
