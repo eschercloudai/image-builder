@@ -51,6 +51,20 @@ chrony_deb: &chrony_deb
     skip: true
     installed: false
 
+common_mariner_rpms: &common_mariner_rpms
+  audit:
+  ca-certificates:
+  cloud-init:
+  cloud-utils-growpart:
+  conntrack-tools:
+  chrony:
+  curl:
+  jq:
+  lsof:
+  python3-pip:
+  socat:
+  sysstat:
+
 common_photon_rpms: &common_photon_rpms
   audit:
   apparmor-parser:
@@ -203,6 +217,12 @@ photon:
     - distro_version: "4"
       package:
         <<: *photon_4_rpms
+mariner:
+  common-package: *common_mariner_rpms
+  azure:
+    package:
+      open-vm-tools:
+      azure-cli:
 rockylinux:
   common-package: *common_rpms
   amazon:
@@ -249,7 +269,7 @@ rockylinux:
     service:
       iscsid:
         enabled: true
-        running: true
+        running: false
 rhel:
   common-package: *common_rpms
   amazon:
@@ -312,6 +332,19 @@ rhel:
       cloud-utils-growpart:
       python2-pip:
       <<: *rh7_rpms
+  nutanix:
+    package:
+      cloud-init:
+      python3-netifaces:
+      iscsi-initiator-utils:
+      nfs-utils:
+      lvm2:
+      xfsprogs:
+      <<: *rh8_rpms
+    service:
+      iscsid:
+        enabled: true
+        running: false
 ubuntu:
   common-kernel-param:
     net.ipv4.conf.all.rp_filter:
@@ -428,7 +461,7 @@ ubuntu:
     service:
       iscsid:
         enabled: true
-        running: true
+        running: false
 
 oracle linux:
   common-kernel-param:

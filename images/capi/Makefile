@@ -70,12 +70,14 @@ deps-azure:
 	hack/ensure-jq.sh
 	hack/ensure-azure-cli.sh
 	hack/ensure-goss.sh
+	$(PACKER) init packer/azure/config.pkr.hcl
 
 .PHONY: deps-do
 deps-do: ## Installs/checks dependencies for DigitalOcean builds
 deps-do:
 	hack/ensure-ansible.sh
 	hack/ensure-packer.sh
+	$(PACKER) init packer/digitalocean/config.pkr.hcl
 
 .PHONY: deps-osc
 deps-osc: ## Installs/checks dependencies for Outscale builds
@@ -159,6 +161,7 @@ deps-nutanix:
 	hack/ensure-ansible.sh
 	hack/ensure-packer.sh
 	hack/ensure-goss.sh
+	$(PACKER) init packer/nutanix/config.pkr.hcl
 
 .PHONY: deps-release
 deps-release: ## Installs/checks dependencies for project releases
@@ -170,7 +173,7 @@ deps-release: ## Installs/checks dependencies for project releases
 ## --------------------------------------
 ## Container variables
 ## --------------------------------------
-REGISTRY ?= gcr.io/$(shell gcloud config get-value project)
+REGISTRY ?= gcr.io/$(or $(shell gcloud config get-value project),scl-image-builder)
 STAGING_REGISTRY := gcr.io/k8s-staging-scl-image-builder
 IMAGE_NAME ?= cluster-node-image-builder
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
@@ -330,7 +333,7 @@ NODE_OVA_VSPHERE_BASE_BUILD_NAMES		:=	$(addprefix node-ova-vsphere-base-,$(PLATF
 NODE_OVA_VSPHERE_CLONE_BUILD_NAMES		:=	$(addprefix node-ova-vsphere-clone-,$(PLATFORMS_AND_VERSIONS))
 
 AMI_BUILD_NAMES			   ?= ami-centos-7 ami-ubuntu-1804 ami-ubuntu-2004 ami-ubuntu-2204 ami-amazon-2 ami-flatcar ami-windows-2019 ami-windows-2004 ami-rockylinux-8 ami-rhel-8
-GCE_BUILD_NAMES			   ?= gce-ubuntu-1804 gce-ubuntu-2004 gce-ubuntu-2204 gce-rhel-8
+GCE_BUILD_NAMES			   ?= gce-ubuntu-2004 gce-ubuntu-2204 gce-rhel-8
 
 # Make needs these lists to be space delimited, no quotes
 VHD_TARGETS := $(shell grep VHD_TARGETS azure_targets.sh | sed 's/VHD_TARGETS=//' | tr -d \")
@@ -358,7 +361,7 @@ VBOX_BUILD_NAMES			?=      vbox-windows-2019
 
 POWERVS_BUILD_NAMES         ?= powervs-centos-8
 
-NUTANIX_BUILD_NAMES ?= nutanix-ubuntu-2004 nutanix-ubuntu-2204 nutanix-rockylinux-8 nutanix-rockylinux-9 nutanix-flatcar nutanix-windows-2022
+NUTANIX_BUILD_NAMES ?= nutanix-ubuntu-2004 nutanix-ubuntu-2204 nutanix-rhel-8 nutanix-rhel-9 nutanix-rockylinux-8 nutanix-rockylinux-9 nutanix-flatcar nutanix-windows-2022
 
 ## --------------------------------------
 ## Dynamic build targets
@@ -487,12 +490,10 @@ $(AZURE_VALIDATE_SIG_CVM_TARGETS): deps-azure
 
 .PHONY: $(DO_BUILD_TARGETS)
 $(DO_BUILD_TARGETS): deps-do
-	$(PACKER) init packer/digitalocean/config.pkr.hcl
 	$(PACKER) build $(PACKER_NODE_FLAGS) -var-file="$(abspath packer/digitalocean/$(subst build-do-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/digitalocean/packer.json
 
 .PHONY: $(DO_VALIDATE_TARGETS)
 $(DO_VALIDATE_TARGETS): deps-do
-	$(PACKER) init packer/digitalocean/config.pkr.hcl
 	$(PACKER) validate $(PACKER_NODE_FLAGS) -var-file="$(abspath packer/digitalocean/$(subst validate-do-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/digitalocean/packer.json
 
 .PHONY: $(OPENSTACK_BUILD_TARGETS)
@@ -563,12 +564,10 @@ $(POWERVS_VALIDATE_TARGETS): deps-powervs
 
 .PHONY: $(NUTANIX_BUILD_TARGETS)
 $(NUTANIX_BUILD_TARGETS): deps-nutanix
-	$(PACKER) init packer/nutanix/config.pkr.hcl
 	$(PACKER) build $(if $(findstring windows,$@),$(PACKER_WINDOWS_NODE_FLAGS),$(PACKER_NODE_FLAGS)) -var-file="packer/nutanix/nutanix.json" -var-file="$(abspath packer/nutanix/$(subst build-nutanix-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/nutanix/packer$(if $(findstring windows,$@),-windows,).json
 
 .PHONY: $(NUTANIX_VALIDATE_TARGETS)
 $(NUTANIX_VALIDATE_TARGETS): deps-nutanix
-	$(PACKER) init packer/nutanix/config.pkr.hcl
 	$(PACKER) validate $(if $(findstring windows,$@),$(PACKER_WINDOWS_NODE_FLAGS),$(PACKER_NODE_FLAGS)) -var-file="packer/nutanix/nutanix.json" -var-file="$(abspath packer/nutanix/$(subst validate-nutanix-,,$@).json)" $(ABSOLUTE_PACKER_VAR_FILES) packer/nutanix/packer$(if $(findstring windows,$@),-windows,).json
 
 ## --------------------------------------
@@ -614,6 +613,7 @@ build-azure-sig-ubuntu-1804: ## Builds Ubuntu 18.04 Azure managed image in Share
 build-azure-sig-ubuntu-2004: ## Builds Ubuntu 20.04 Azure managed image in Shared Image Gallery
 build-azure-sig-ubuntu-2204: ## Builds Ubuntu 22.04 Azure managed image in Shared Image Gallery
 build-azure-sig-centos-7: ## Builds CentOS 7 Azure managed image in Shared Image Gallery
+build-azure-sig-mariner-2: ## Builds Mariner 2 Azure managed image in Shared Image Gallery
 build-azure-sig-rhel-8: ## Builds RHEL 8 Azure managed image in Shared Image Gallery
 build-azure-sig-windows-2019: ## Builds Windows Server 2019 Azure managed image in Shared Image Gallery
 build-azure-sig-windows-2019-containerd: ## Builds Windows Server 2019 with containerd Azure managed image in Shared Image Gallery
@@ -625,12 +625,14 @@ build-azure-vhd-ubuntu-1804: ## Builds Ubuntu 18.04 VHD image for Azure
 build-azure-vhd-ubuntu-2004: ## Builds Ubuntu 20.04 VHD image for Azure
 build-azure-vhd-ubuntu-2204: ## Builds Ubuntu 22.04 VHD image for Azure
 build-azure-vhd-centos-7: ## Builds CentOS 7 VHD image for Azure
+build-azure-vhd-mariner-2: ## Builds Mariner 2 VHD image for Azure
 build-azure-vhd-rhel-8: ## Builds RHEL 8 VHD image for Azure
 build-azure-vhd-windows-2019: ## Builds for Windows Server 2019
 build-azure-vhd-windows-2019-containerd: ## Builds for Windows Server 2019 with containerd
 build-azure-vhd-windows-2022-containerd: ## Builds for Windows Server 2022 with containerd
 build-azure-vhd-windows-2004: ## Builds for Windows Server 2004 SAC
 build-azure-sig-centos-7-gen2: ## Builds CentOS Gen2 managed image in Shared Image Gallery
+build-azure-sig-mariner-2-gen2: ## Builds Mariner Gen2 managed image in Shared Image Gallery
 build-azure-sig-flatcar: ## Builds Flatcar Azure managed image in Shared Image Gallery
 build-azure-sig-flatcar-gen2: ## Builds Flatcar Azure Gen2 managed image in Shared Image Gallery
 build-azure-sig-ubuntu-1804-gen2: ## Builds Ubuntu 18.04 Gen2 managed image in Shared Image Gallery
@@ -646,7 +648,6 @@ build-do-ubuntu-2004: ## Builds Ubuntu 20.04 DigitalOcean Snapshot
 build-do-centos-7: ## Builds Centos 7 DigitalOcean Snapshot
 build-do-all: $(DO_BUILD_TARGETS) ## Builds all DigitalOcean Snapshot
 
-build-gce-ubuntu-1804: ## Builds the GCE ubuntu-1804 image
 build-gce-ubuntu-2004: ## Builds the GCE ubuntu-2004 image
 build-gce-ubuntu-2204: ## Builds the GCE ubuntu-2204 image
 build-gce-rhel-8: ## Builds the GCE rhel-8 image
@@ -763,6 +764,8 @@ build-vbox-all: $(VBOX_BUILD_TARGETS) ## Builds all Qemu images
 
 build-nutanix-ubuntu-2004: ## Builds the Nutanix ubuntu-2004 image
 build-nutanix-ubuntu-2204: ## Builds the Nutanix ubuntu-2204 image
+build-nutanix-rhel-8: ## Builds the Nutanix RedHat Enterprise Linux 8 image
+build-nutanix-rhel-9: ## Builds the Nutanix edHat Enterprise Linux 9 image
 build-nutanix-rockylinux-8: ## Builds the Nutanix Rocky Linux 8 image
 build-nutanix-rockylinux-9: ## Builds the Nutanix Rocky Linux 9 image
 build-nutanix-flatcar: ## Builds the Nutanix Flatcar image
@@ -786,6 +789,7 @@ validate-ami-windows-2004: ## Validates Windows Server 2004 SAC AMI Packer confi
 validate-ami-all: $(AMI_VALIDATE_TARGETS) ## Validates all AMIs Packer config
 
 validate-azure-sig-centos-7: ## Validates CentOS 7 Azure managed image in Shared Image Gallery Packer config
+validate-azure-sig-mariner-2: ## Validates Mariner 2 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-rhel-8: ## Validates RHEL 8 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-1804: ## Validates Ubuntu 18.04 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-2004: ## Validates Ubuntu 20.04 Azure managed image in Shared Image Gallery Packer config
@@ -795,6 +799,7 @@ validate-azure-sig-windows-2019-containerd: ## Validate Windows Server 2019 with
 validate-azure-sig-windows-2022-containerd: ## Validate Windows Server 2022 with containerd Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-windows-2004: ## Validate Windows Server 2004 SAC Azure managed image in Shared Image Gallery Packer config
 validate-azure-vhd-centos-7: ## Validates CentOS 7 VHD image Azure Packer config
+validate-azure-vhd-mariner-2: ## Validates Mariner 2 VHD image Azure Packer config
 validate-azure-vhd-rhel-8: ## Validates RHEL 8 VHD image Azure Packer config
 validate-azure-vhd-ubuntu-1804: ## Validates Ubuntu 18.04 VHD image Azure Packer config
 validate-azure-vhd-ubuntu-2004: ## Validates Ubuntu 20.04 VHD image Azure Packer config
@@ -804,6 +809,7 @@ validate-azure-vhd-windows-2019-containerd: ## Validate Windows Server 2019 VHD 
 validate-azure-vhd-windows-2022-containerd: ## Validate Windows Server 2022 VHD with containerd image Azure Packer config
 validate-azure-vhd-windows-2004: ## Validate Windows Server 2004 SAC VHD image Azure Packer config
 validate-azure-sig-centos-7-gen2: ## Validates CentOS 7 Azure managed image in Shared Image Gallery Packer config
+validate-azure-sig-mariner-2-gen2: ## Validates Mariner 2 Gen2 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-1804-gen2: ## Validates Ubuntu 18.04 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-2004-gen2: ## Validates Ubuntu 20.04 Azure managed image in Shared Image Gallery Packer config
 validate-azure-sig-ubuntu-2004-cvm: ## Validates Ubuntu 20.04 CVM Azure managed image in Shared Image Gallery Packer config
@@ -821,7 +827,6 @@ validate-openstack-ubuntu-2204: ## Validates Ubuntu 20.04 Openstack Image Packer
 validate-openstack-flatcar: ## Validates Flatcar Openstack Image Packer config
 validate-openstack-all: $(OPENSTACK_VALIDATE_TARGETS) ## Validates all Openstack Glance Image Packer config
 
-validate-gce-ubuntu-1804: ## Validates Ubuntu 18.04 GCE Snapshot Packer config
 validate-gce-ubuntu-2004: ## Validates Ubuntu 20.04 GCE Snapshot Packer config
 validate-gce-ubuntu-2204: ## Validates Ubuntu 22.04 GCE Snapshot Packer config
 validate-gce-rhel-8: ## Validates RHEL 8 GCE Snapshot Packer config
@@ -899,8 +904,10 @@ validate-powervs-all: $(POWERVS_VALIDATE_TARGETS) ## Validates all PowerVS Packe
 
 validate-nutanix-ubuntu-2004: ## Validates Ubuntu 20.04 Nutanix Packer config
 validate-nutanix-ubuntu-2204: ## Validates Ubuntu 22.04 Nutanix Packer config
+validate-nutanix-rhel-8: ## Validates RedHat Enterprise Linux 8 Nutanix Packer config
+validate-nutanix-rhel-9: ## Validates RedHat Enterprise Linux 9 Nutanix Packer config
 validate-nutanix-rockylinux-8: ## Validates Rocky Linux 8 Nutanix Packer config
-validate-nutanix-rockylinux-9: ## Validates the Nutanix Rocky Linux 9 Nutanix Packer config
+validate-nutanix-rockylinux-9: ## Validates Rocky Linux 9 Nutanix Packer config
 validate-nutanix-flatcar: ## Validates the Nutanix Flatcar Nutanix Packer config
 validate-nutanix-windows-2022: ## Validates Windows Server 2022 Nutanix Packer config
 validate-nutanix-all: $(NUTANIX_VALIDATE_TARGETS) ## Validates all Nutanix Packer config
@@ -1007,6 +1014,6 @@ json-sort: ## Sort all JSON files alphabetically
 ## --------------------------------------
 ##@ Ignition
 .PHONY: gen-ignition
-ignition_files = bootstrap
+ignition_files = bootstrap bootstrap-pass-auth bootstrap-cloud
 gen-ignition: deps-ignition ## Generates Ignition files from CLC
 	for f in $(ignition_files); do (ct < packer/files/flatcar/clc/$$f.yaml | jq '.' > packer/files/flatcar/ignition/$$f.json) || exit 1; done

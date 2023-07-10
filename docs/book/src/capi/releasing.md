@@ -1,6 +1,6 @@
 # Image Builder Releases
 
-The current release of Image Builder is [v0.1.15][] (May 11, 2023). The corresponding container image is `registry.k8s.io/scl-image-builder/cluster-node-image-builder-amd64:v0.1.15`.
+The current release of Image Builder is [v0.1.16][] (May 11, 2023). The corresponding container image is `registry.k8s.io/scl-image-builder/cluster-node-image-builder-amd64:v0.1.16`.
 
 ## Release Process
 
@@ -8,13 +8,13 @@ Releasing image-builder is a simple process: project maintainers should be able 
 
 ### Create a tag
 
-Releases in image-builder follow [semantic versioning][semver] conventions. Currently the project tags only patch releases on the master branch.
+Releases in image-builder follow [semantic versioning][semver] conventions. Currently the project tags only patch releases on the main branch.
 
 - Check out the existing branch and make sure you have the latest changes:
-  - `git checkout master`
+  - `git checkout main`
   - `git fetch upstream`
     - *This assumes you have an "upstream" git remote pointing at github.com/kubernetes-sigs/image-builder*
-  - `git rebase upstream/master`
+  - `git rebase upstream/main`
     - *If the HEAD commit isn't meant for release, reset to the intended commit before proceeding.*
 - Ensure you can sign tags:
   - Set up GPG, SSH, or S/MIME [at GitHub](https://docs.github.com/authentication/managing-commit-signature-verification/about-commit-signature-verification) if you haven't already.
@@ -77,7 +77,7 @@ Image-builder v0.1.16 is now available: https://github.com/kubernetes-sigs/image
 Thanks to all contributors!
 ```
 
-[v0.1.15]: https://github.com/kubernetes-sigs/image-builder/releases/tag/v0.1.15
+[v0.1.16]: https://github.com/kubernetes-sigs/image-builder/releases/tag/v0.1.16
 [#image-builder channel]: https://kubernetes.slack.com/archives/C01E0Q35A8J
 [Personal access tokens]: https://github.com/settings/tokens
 [pr-container-image-build]: https://testgrid.k8s.io/sig-cluster-lifecycle-image-builder#pr-container-image-build

@@ -12,65 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- name: Install cloud-init packages
-  apt:
-    name: "{{ packages }}"
-    state: present
-    force_apt_get: yes
-  vars:
-    packages:
-      - cloud-init
-      - cloud-guest-utils
-      - cloud-initramfs-copymods
-      - cloud-initramfs-dyn-netconf
-  when: ansible_os_family == "Debian"
-
-- name: Install cloud-init packages
-  yum:
-    name: "{{ packages }}"
-    state: present
-  vars:
-    packages:
-      - cloud-init
-      - cloud-utils-growpart
+- include_tasks: nutanix-redhat.yml
   when: ansible_os_family == "RedHat"
 
-- name: Install CSI prerequisites on Ubuntu
-  apt:
-    name: "{{ packages }}"
-    state: present
-    force_apt_get: yes
-  vars:
-    packages:
-      - nfs-common
-      - open-iscsi
-      - lvm2
-      - xfsprogs
+- include_tasks: nutanix-ubuntu.yml
   when: ansible_os_family == "Debian"
 
-- name: Install CSI prerequisites on RedHat
-  yum:
-    name: "{{ packages }}"
-    state: present
-  vars:
-    packages:
-      - iscsi-initiator-utils
-      - nfs-utils
-      - lvm2
-      - xfsprogs
-  when: ansible_os_family == "RedHat"
-
-- name: Enable iSCSI initiator daemon on Ubuntu or RedHat
-  systemd:
-    name: iscsid
-    state: started
-    enabled: true
-  when: ansible_os_family == "Debian" or
-    ansible_os_family == "RedHat"
-
-- name: Disable Hyper-V KVP protocol daemon on Ubuntu
-  systemd:
-    name: hv-kvp-daemon
-    state: stopped
-    enabled: false
-  when: ansible_os_family == "Debian"
+- name: Ensure ip_vs module is loaded
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/kubernetes.conf
+    create: true
+    line: ip_vs

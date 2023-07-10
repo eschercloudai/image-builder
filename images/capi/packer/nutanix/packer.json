@@ -49,7 +49,8 @@
   "provisioners": [
     {
       "environment_vars": [
-        "BUILD_NAME={{user `build_name`}}"
+        "BUILD_NAME={{user `build_name`}}",
+        "PYPY_HTTP_SOURCE={{user `pypy_http_source`}}"
       ],
       "execute_command": "BUILD_NAME={{user `build_name`}}; if [[ \"${BUILD_NAME}\" == *\"flatcar\"* ]]; then sudo {{.Vars}} -S -E bash '{{.Path}}'; fi",
       "script": "./packer/files/flatcar/scripts/bootstrap-flatcar.sh",
@@ -88,6 +89,7 @@
       "vars_inline": {
         "ARCH": "amd64",
         "OS": "{{user `distro_name` | lower}}",
+        "OS_VERSION": "{{user `distribution_version` | lower}}",
         "PROVIDER": "nutanix",
         "containerd_version": "{{user `containerd_version`}}",
         "kubernetes_cni_deb_version": "{{ user `kubernetes_cni_deb_version` }}",

@@ -1,4 +1,4 @@
-# Copyright 2021 The Kubernetes Authors.
+# Copyright 2023 The Kubernetes Authors.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- import_tasks: executables.yml
-  when: additional_executables | bool
-
-- import_tasks: registry.yml
-  when: additional_registry_images | bool
-
-- import_tasks: url.yml
-  when: additional_url_images | bool
-
-# We have to use include_tasks for the S3 task due to ansible pre-processing the task when import_tasks is used.
-# This causes a failure when using any other additional_component.
-- include_tasks: s3.yml
-  when: additional_s3 | bool
-
+- name: install Azure CLI
+  package:
+    name: azure-cli
+    state: present
