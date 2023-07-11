@@ -19,7 +19,7 @@ the driver won't work with it when the image is booted. This is because the DKMS
 being installed after the kernel has been installed. To get around this, we install the driver first.
 
 The `nvidia` custom role does not make use of the `load_additional_components->s3` role due to a conflict that can occur when attempting to also use other aspects of `load_additional_components`.
-As the `nvidia` role is a `node_custom_roles_pre`, it means that `load_additional_components` could be called out of order. 
+As the `nvidia` role loaded as part of `node_custom_roles_pre`, it means that `load_additional_components` could be called out of order. 
 
 The reasoning behind requiring an S3 endpoint was due to the fact NVIDIA will soon (July 2023) no longer support an internal licensing server being hosted by a customer.
 
