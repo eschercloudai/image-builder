@@ -108,6 +108,10 @@
   ansible.builtin.command:
     cmd: "/tmp/NVIDIA-Linux-gridd.run -s --dkms --no-cc-version-check"
 
+- name: Set remove the NVIDIA driver installer file
+  file:
+    path: /tmp/NVIDIA-Linux-gridd.run
+    state: absent
 
 - name: Cleanup packages for interacting with s3 endpoint
   become: true
