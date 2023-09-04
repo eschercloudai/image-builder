@@ -91,6 +91,11 @@ photon_3_rpms:
 photon_4_rpms:
 - jq
 
+# Creating photon_5_rpms for adding future packages if needed.
+# Since empty list errors out, jq is added.
+photon_5_rpms:
+- jq
+
 common_virt_rpms:
 - open-vm-tools
 
@@ -120,3 +125,6 @@ leak_local_mdns_to_dns: false
 build_target: "virt"
 cloud_cfg_file: "/etc/cloud/cloud.cfg"
 external_binary_path: "{{ '/opt/bin' if ansible_os_family == 'Flatcar' else '/usr/local/bin' }}"
+
+# Enable containerd trace audit in auditd, default: false.
+enable_containerd_audit: false

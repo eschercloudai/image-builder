@@ -13,6 +13,7 @@
 # limitations under the License.
 
 ---
+
 - name: unload nouveau
   modprobe:
     name: nouveau
@@ -82,7 +83,7 @@
     dest: /etc/nvidia/gridd.conf
     mode: 0644
 
-- name: Download NVIDIA driver
+- name: Download NVIDIA driver installer file
   amazon.aws.s3_object:
     endpoint_url: "{{ nvidia_s3_url }}"
     access_key: "{{ nvidia_bucket_access }}"
@@ -95,7 +96,7 @@
   retries: 5
   delay: 3
 
-- name: Set Permissions of NVIDIA driver
+- name: Set Permissions of NVIDIA driver installer file
   file:
     path: /tmp/NVIDIA-Linux-gridd.run
     state: file
@@ -108,7 +109,7 @@
   ansible.builtin.command:
     cmd: "/tmp/NVIDIA-Linux-gridd.run -s --dkms --no-cc-version-check"
 
-- name: Set remove the NVIDIA driver installer file
+- name: Remove the NVIDIA driver installer file
   file:
     path: /tmp/NVIDIA-Linux-gridd.run
     state: absent

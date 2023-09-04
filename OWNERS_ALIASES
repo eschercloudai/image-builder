@@ -7,6 +7,7 @@ aliases:
     - kkeshavamurthy
     - mboersma
   image-builder-reviewers:
+    - drew-viles
     - randomvariable
   image-builder-azure-reviewers:
     - jsturtevant
@@ -63,24 +64,14 @@ aliases:
     - davidjumani
     - Pearl1594
   cluster-api-vsphere-maintainers:
-    - frapposelli
+    - chrischdi
     - gab-satchi
+    - killianmuldoon
     - randomvariable
+    - sbueringer
     - srm09
     - yastij
   cluster-api-nutanix-maintainers:
     - tuxtof
   cluster-api-nutanix-reviewers:
     - tuxtof
-  kops-maintainers:
-    - hakman
-    - justinsb
-    - rifelpet
-    # kOps maintainers, but members of kubernetes, not of kubernetes-sigs:
-    # - geojaz
-    # - johngmyers
-    # - kashifsaadat
-    # - mikesplain
-    # - olemarkus
-    # - rdrgmnzs
-    # - zetaab

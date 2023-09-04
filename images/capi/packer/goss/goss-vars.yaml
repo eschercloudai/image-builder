@@ -88,6 +88,9 @@ photon_3_rpms: &photon_3_rpms
 photon_4_rpms: &photon_4_rpms
   jq:
 
+photon_5_rpms: &photon_5_rpms
+  jq:
+
 arch: "amd64"
 containerd_version: ""
 containerd_wasm_shims_runtimes: ""
@@ -163,6 +166,11 @@ centos:
       cloud-init:
       cloud-utils-growpart:
       python2-pip:
+  hcloud:
+    package:
+      cloud-init:
+      cloud-utils-growpart:
+      python2-pip:
 flatcar:
   common-service:
     containerd:
@@ -182,6 +190,8 @@ flatcar:
   ova:
     command:
   nutanix:
+    command:
+  hcloud:
     command:
 photon:
   common-service:
@@ -217,6 +227,9 @@ photon:
     - distro_version: "4"
       package:
         <<: *photon_4_rpms
+    - distro_version: "5"
+      package:
+        <<: *photon_5_rpms
 mariner:
   common-package: *common_mariner_rpms
   azure:
@@ -270,6 +283,12 @@ rockylinux:
       iscsid:
         enabled: true
         running: false
+  hcloud:
+    package:
+      cloud-init:
+      cloud-utils-growpart:
+      python3-netifaces:
+      <<: *rh8_rpms
 rhel:
   common-package: *common_rpms
   amazon:
@@ -433,6 +452,10 @@ ubuntu:
       cloud-initramfs-copymods:
       cloud-initramfs-dyn-netconf:
   qemu:
+    service:
+      networkd-dispatcher:
+        enabled: true
+        running: true
     package:
       linux-cloud-tools-virtual:
       linux-tools-virtual:
@@ -462,6 +485,13 @@ ubuntu:
       iscsid:
         enabled: true
         running: false
+  hcloud:
+    package:
+      cloud-guest-utils:
+      cloud-initramfs-copymods:
+      cloud-initramfs-dyn-netconf:
+      linux-cloud-tools-generic:
+      linux-tools-generic:
 
 oracle linux:
   common-kernel-param:

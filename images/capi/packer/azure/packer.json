@@ -47,6 +47,7 @@
       },
       "client_id": "{{user `client_id`}}",
       "client_secret": "{{user `client_secret`}}",
+      "custom_data_file": "{{user `custom_data_file`}}",
       "image_offer": "{{user `image_offer` }}",
       "image_publisher": "{{user `image_publisher` }}",
       "image_sku": "{{user `image_sku`}}",
@@ -112,17 +113,6 @@
     }
   ],
   "provisioners": [
-    {
-      "environment_vars": [
-        "BUILD_NAME={{user `build_name`}}"
-      ],
-      "inline": [
-        "if [ $BUILD_NAME != \"ubuntu-1804\" ] && [ $BUILD_NAME != \"ubuntu-1804-gen2\" ]; then exit 0; fi",
-        "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
-        "sudo apt-get -qq update && sudo DEBIAN_FRONTEND=noninteractive apt-get -qqy install python python-pip"
-      ],
-      "type": "shell"
-    },
     {
       "ansible_env_vars": [
         "ANSIBLE_SSH_ARGS='{{user `existing_ansible_ssh_args`}} {{user `ansible_common_ssh_args`}}'"
@@ -225,6 +215,7 @@
     "containerd_wasm_shims_runtimes": null,
     "crictl_url": "https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{user `crictl_version`}}/crictl-v{{user `crictl_version`}}-linux-amd64.tar.gz",
     "crictl_version": null,
+    "custom_data_file": "",
     "direct_shared_gallery_image_id": "",
     "distribution": null,
     "distribution_release": null,
