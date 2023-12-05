@@ -22,7 +22,7 @@ set -o pipefail
 
 source hack/utils.sh
 
-_version="2.15.3"
+_version="2.15.4"
 
 # Change directories to the parent directory of the one in which this
 # script is located.
@@ -32,11 +32,23 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 export PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_ROOT_USER_ACTION=ignore
 
 if ! command -v ansible >/dev/null 2>&1; then
-    ensure_py3
-    pip3 install --user "ansible-core==${_version}"
+    pip3_install "ansible-core==${_version}"
     ensure_py3_bin ansible
     ensure_py3_bin ansible-playbook
 fi
+
+ansible_version=""
+IFS=" " read -ra ansible_version <<< "$(ansible --version)"
+if [[ "${_version}" != $(echo -e "${_version}\n${ansible_version[2]}" | sort -s -t. -k 1,1 -k 2,2n -k 3,3n | head -n1) && "${ansible_version[2]}" != "devel" ]]; then
+  cat <<EOF
+Detected ansible version: ${ansible_version[*]}.
+Image builder requires ${_version} or greater.
+Please install ${_version} or later.
+EOF
+  exit 2
+fi
+
+echo ${ansible_version[*]}
 
 ansible-galaxy collection install \
   community.general \

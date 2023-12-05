@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-
 # Requires license. If you running on Azure License is currently provided with Windows Server images.
 - name: Install Docker via OneGet
   win_shell: |
@@ -20,7 +19,7 @@
     $package = Find-Package -Name Docker -ProviderName DockerMsftProvider -RequiredVersion {{ docker_ee_version }}
     $package | Install-Package -Force | Out-Null
 
-- name: Start Docker Service 
+- name: Start Docker Service
   win_service:
     name: docker
     start_mode: auto
@@ -42,4 +41,3 @@
   when: (prepull | bool)
   vars:
     images: "{{ prepull_images[distribution_version] | default([]) }}"
-    

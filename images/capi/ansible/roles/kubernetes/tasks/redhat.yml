@@ -23,12 +23,12 @@
 - name: Install Kubernetes
   yum:
     name: "{{ packages }}"
-    allow_downgrade: True
+    allow_downgrade: true
     state: present
     lock_timeout: 60
   vars:
     packages:
-      - "kubelet-{{ kubernetes_rpm_version }}"
-      - "kubeadm-{{ kubernetes_rpm_version }}"
-      - "kubectl-{{ kubernetes_rpm_version }}"
-      - "kubernetes-cni-{{ kubernetes_cni_rpm_version }}"
+      - kubelet-{{ kubernetes_rpm_version }}
+      - kubeadm-{{ kubernetes_rpm_version }}
+      - kubectl-{{ kubernetes_rpm_version }}
+      - kubernetes-cni-{{ kubernetes_cni_rpm_version }}

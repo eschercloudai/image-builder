@@ -17,13 +17,13 @@
   apt:
     name: "{{ packages }}"
     state: present
-    force_apt_get: yes
+    force_apt_get: true
   vars:
     packages:
-    - cloud-init
-    - cloud-guest-utils
-    - cloud-initramfs-copymods
-    - cloud-initramfs-dyn-netconf
+      - cloud-init
+      - cloud-guest-utils
+      - cloud-initramfs-copymods
+      - cloud-initramfs-dyn-netconf
 
 - name: Disable Hyper-V KVP protocol daemon on Ubuntu
   systemd:
@@ -37,8 +37,8 @@
     dest: "{{ item.dest }}"
     mode: a+x
   vars:
-    server_dir: "/var/lib/dhcp"
-    chrony_helper_dir: "/usr/lib/chrony"
+    server_dir: /var/lib/dhcp
+    chrony_helper_dir: /usr/lib/chrony
   loop:
     - { src: files/etc/networkd-dispatcher/routable.d/20-chrony.j2, dest: /etc/networkd-dispatcher/routable.d/20-chrony }
     - { src: files/etc/networkd-dispatcher/off.d/20-chrony.j2, dest: /etc/networkd-dispatcher/off.d/20-chrony }

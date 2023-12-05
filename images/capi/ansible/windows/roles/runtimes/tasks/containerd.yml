@@ -14,10 +14,10 @@
 ---
 - name: Download containerd
   win_get_url:
-    url: '{{ containerd_url }}'
-    dest: '{{ tempdir.stdout | trim }}\containerd.tar.gz'
-    checksum: '{{ containerd_sha256 }}'
-    checksum_algorithm: "sha256"
+    url: "{{ containerd_url }}"
+    dest: "{{ tempdir.stdout | trim }}\\containerd.tar.gz"
+    checksum: "{{ containerd_sha256 }}"
+    checksum_algorithm: sha256
     url_timeout: 300
   register: containerd
   retries: 5
@@ -26,18 +26,18 @@
 
 - name: Create containerd directory structure
   win_file:
-    path:  "{{ item }}"
+    path: "{{ item }}"
     state: directory
-  loop: 
-    - '{{ programfiles.stdout | trim }}\containerd'
-    - '{{ alluserprofile.stdout | trim }}\containerd\state'
-    - '{{ alluserprofile.stdout | trim }}\containerd\root'
-    - '{{ systemdrive.stdout | trim }}/opt/cni/bin'
-    - '{{ systemdrive.stdout | trim }}/etc/cni/net.d'
+  loop:
+    - "{{ programfiles.stdout | trim }}\\containerd"
+    - "{{ alluserprofile.stdout | trim }}\\containerd\\state"
+    - "{{ alluserprofile.stdout | trim }}\\containerd\\root"
+    - "{{ systemdrive.stdout | trim }}/opt/cni/bin"
+    - "{{ systemdrive.stdout | trim }}/etc/cni/net.d"
 
 - name: Check if containerd exists
   win_stat:
-    path: '{{ programfiles.stdout | trim }}\containerd\containerd.exe'
+    path: "{{ programfiles.stdout | trim }}\\containerd\\containerd.exe"
   register: containerd_file
 
 - name: Unpack containerd binaries
@@ -47,12 +47,12 @@
 - name: Add containerd to path
   win_path:
     elements:
-    - '{{ programfiles.stdout | trim }}\containerd'
+      - "{{ programfiles.stdout | trim }}\\containerd"
     scope: machine
 
 - name: Copy containerd config file {{ containerd_config_file }}
   win_template:
-    dest: '{{ programfiles.stdout | trim }}\containerd\config.toml'
+    dest: "{{ programfiles.stdout | trim }}\\containerd\\config.toml"
     src: "{{ containerd_config_file }}"
   vars:
     allusersprofile: "{{ alluserprofile.stdout | trim }}"
@@ -72,7 +72,7 @@
     #refresh the path to ensure ansible sees update
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
     containerd.exe --register-service
-  when: containerd_service.exists == false
+  when: not containerd_service.exists
 
 # Enables DNS resolution of SMB shares
 # https://github.com/kubernetes-sigs/windows-gmsa/issues/30#issuecomment-802240945
